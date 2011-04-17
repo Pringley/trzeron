@@ -6,7 +6,7 @@ import random, req, string, hashlib
 # make sure the tables exist
 req.sql.execute('create table if not exists sessions (id, username)')
 req.sql.execute('create table if not exists users (username, password)')
-req.sql.execute('create table if not exists grid (row, col, formatted, entity_id)')
+req.sql.execute('create table if not exists grid (row, col, data_type, entity_id, owner)')
 req.sql.execute('create table if not exists entities (id)')
 
 def new_id(table):
@@ -80,6 +80,9 @@ class User:
         
         username = self.username()
         
+        # this is an internal method and shouldn't be called
+        # unless the username is already set -- if for some
+        # reason it is, fail loudly
         if not username:
             raise Exception('trying to set password to anonymous!')
         
@@ -88,13 +91,17 @@ class User:
     
     def username(self):
         """Return the username of the client with this id."""
+        
+        # query the database
         req.sql.execute('select username from sessions where id=?', (self.id,))
-        name = req.sql.fetchone()
-
-        if not name:
+        q = req.sql.fetchone()
+        
+        # this should never happen
+        # so fail loudly
+        if not q:
             raise Exception('could not find id in table!')
         
-        return name[0]
+        return q[0]
     
     @staticmethod
     def client():
@@ -143,7 +150,7 @@ class Entity:
 
 class Square:
     """A square on the grid."""
-
+    
     def __init__(self, row, col):
         self.row = row
         self.col = col
@@ -153,11 +160,12 @@ class Square:
         req.sql.execute('select * from grid where row=? and col=?',
                         (self.row, self.col))
         if not req.sql.fetchone():
-            req.sql.execute('insert into grid values (?,?,0,null)',
+            req.sql.execute('insert into grid values (?,?,0,null,null)',
                             (self.row, self.col))
 
     
     def __str__(self):
+        # just print the (row, col) pair
         return '(%s, %s)' % (self.row, self.col)
     
     def has_entity(self):
@@ -168,37 +176,43 @@ class Square:
     def get_entity(self):
         """Return the entity located at this grid square, or None."""
         
+        # query the database
         req.sql.execute('select entity_id from grid where row=? and col=?',
                         (self.row, self.col))
         q = req.sql.fetchone()
+        
         if q:
             entity_id = q[0]
+            
+            # if there exists an id in the table,
+            # return its corresponding entity
             if entity_id:
                 return Entity(q[0])
         
-    def is_formatted(self):
-        """Return true if the square is formatted."""
+    def get_data_type(self):
+        """Return an integer representing the data type of the square."""
         
         # get square data from the table
-        req.sql.execute('select formatted from grid where row=? and col=?',
+        req.sql.execute('select data_type from grid where row=? and col=?',
                         (self.row, self.col))
-        formatted = req.sql.fetchone()
+        q = req.sql.fetchone()
         
-        # fail loudly if there is 
-        # (it never should)
-        if not formatted:
+        # fail loudly if there isn't data 
+        # (there should always be data)
+        if not q:
             raise Exception('could not find square in table')
         
-        return bool(formatted[0])
+        return q[0]
     
-    def format(self):
-        """Set the square's formatted flag to true."""
+    def set_data_type(self, data_type):
+        """Set the data type of the square."""
         
-        req.sql.execute('update grid set formatted=1 where row=? and col=?',
-                        (self.row, self.col))
+        req.sql.execute('update grid set data_type=? where row=? and col=?',
+                        (data_type, self.row, self.col))
         
 
 if __name__ == '__main__':
     print 'TEST RUN'
-        
+    
+
     req.done()
