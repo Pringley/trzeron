@@ -30,4 +30,3 @@
 
 import req, objects
 
-user = User.client()

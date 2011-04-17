@@ -57,7 +57,7 @@ class User:
     
     def is_logged_in(self):
         """Return true if the user is authenticated."""
-        return bool(self.username())
+        return self.username() is not None
     
     def login(self, username, raw_password):
         """Attempt to log in given a username and plaintext password. Returns true if successful."""
@@ -109,7 +109,7 @@ class User:
         # this is an internal method and shouldn't be called
         # unless the username is already set -- if for some
         # reason it is, fail loudly
-        if not username:
+        if username is None:
             raise Exception('trying to set password to anonymous!')
         
         req.sql.execute('update users set password=? where username=?',
@@ -121,19 +121,14 @@ class User:
         # query the database
         req.sql.execute('select username from sessions where id=?', (self.id,))
         q = req.sql.fetchone()
-        
-        # this should never happen
-        # so fail loudly
-        if not q:
-            raise Exception('could not find id in table!')
-        
-        return q[0]
+        if q and q[0]:
+            return q[0]
     
     @staticmethod
     def client():
         """Get the client who sent the request."""
         if req.field.has_key('sid'):
-            return User(req.field['sid'])
+            return User(req.field['sid'].value)
         else:
             id = new_id('sessions')
             req.sql.execute('insert into sessions values (?, null)', (id,))
