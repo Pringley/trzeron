@@ -31,7 +31,7 @@
 import BaseHTTPServer, CGIHTTPServer
 
 cgihandler = CGIHTTPServer.CGIHTTPRequestHandler
-cgihandler.cgi_directories = ['/']
+cgihandler.cgi_directories = ['/server/']
 
 httpd = BaseHTTPServer.HTTPServer(('',8000), cgihandler)
 
