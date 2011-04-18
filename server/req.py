@@ -58,6 +58,12 @@ def sanitize(input_string):
 
 # set up JSON (output data)
 out = {}
+def error(message):
+    """Append a message to the error log sent to the client."""
+    if not out.has_key('errors'):
+        out['errors'] = [message]
+    else:
+        out['errors'] += [message]
 
 def done():
     """Close the connection to SQLite and print the JSON document."""

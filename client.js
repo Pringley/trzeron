@@ -18,12 +18,18 @@ function logged_in(callback) {
 /**
  * Attempt to log in to the server.
  *
- * username - login identifier string
+ * username - alphanumeric username (strings with symbols will
+ *            be rejected by the server)
  * password - plaintext password string
  * callback - function to be called when the server replies;
  *            takes a boolean argument that is true if the
  *            login is successful (or the user was previously
  *            logged in)
+ *
+ * If the username has not yet been used, the server will accept
+ * the login and store the given password. Then, in order to
+ * re-use that username successfully, one has to supply that
+ * password again.
  */
 
 function login(username, password, callback) {

@@ -31,7 +31,7 @@ import random, req, string, hashlib
 
 # make sure the tables exist
 req.sql.execute('create table if not exists sessions (id, username)')
-req.sql.execute('create table if not exists users (username, password)')
+req.sql.execute('create table if not exists users (username, password, entity_id)')
 req.sql.execute('create table if not exists grid (row, col, data_type, entity_id, owner)')
 req.sql.execute('create table if not exists entities (id)')
 
@@ -60,23 +60,40 @@ class User:
         return self.username() is not None
     
     def login(self, username, raw_password):
-        """Attempt to log in given a username and plaintext password. Returns true if successful."""
+        """Attempt to log in given a username and plaintext password.
         
-        # hash the raw password immediately
+        The username and password are not assumed to be safe for verbatim
+        insertion into the database. The username must be alphanumeric
+        (otherwise the login will fail). The password is hashed using SHA1
+        before being inserted into the database.
+
+        Returns true if successful.
+        
+        """
+        
+        # protect against SQL injection
+        clean_username = req.sanitize(username)
+        
+        # 
+        if not clean_username == username:
+            req.error('bad username')
+            return False
+        
+        # hash the raw password
         password = hashlib.sha1(raw_password).hexdigest()
         
         # query the user database
         req.sql.execute('select password from users where username=?',
-                        (username,))
+                        (clean_username,))
         u = req.sql.fetchone()
         
         # if the user is not in the database, register them now
         if not u:
             # add user/pass combo to database
-            req.sql.execute('insert into users values (?, ?)',
-                            (username, password))
+            req.sql.execute('insert into users values (?, ?, null)',
+                            (clean_username, password))
             # set the username and password
-            self._set_username(username)
+            self._set_username(clean_username)
             self._set_password(password)
             return True
         
@@ -85,7 +102,7 @@ class User:
         else:
             stored_password = u[0]
             if password == stored_password:
-                self._set_username(username)
+                self._set_username(clean_username)
                 return True
             else:
                 return False
@@ -99,7 +116,7 @@ class User:
         
         # set this session's username in the database
         req.sql.execute('update sessions set username=? where id=?',
-                        (username, self.id))
+                       (username, self.id))
             
     def _set_password(self, password):
         """(internal) Set the password of the user."""
@@ -172,6 +189,19 @@ class Entity:
 class Square:
     """A square on the grid."""
     
+    # dictionary containing the map from integer to square type
+    DATA_VALUES = {
+
+        0: 'unformatted',     # unowned grid space; must be formatted
+                              # before it's of any use
+
+        1: 'base',            # a player's main base; can only have
+                              # one per player
+
+        2: 'memory',          # grid space owned by a player
+
+    }
+    
     def __init__(self, row, col):
         self.row = row
         self.col = col
@@ -189,10 +219,36 @@ class Square:
         # just print the (row, col) pair
         return '(%s, %s)' % (self.row, self.col)
     
-    def has_entity(self):
-        """Return if there is an entity at this square."""
+    def get_owner(self):
+        """Return the username of the player who owns this square."""
         
-        return bool(self.get_entity())
+        req.sql.execute('select owner from grid where row=? and col=?',
+                        (self.row, self.col))
+        q = req.sql.fetchone()
+        
+        # fail loudly if there isn't data 
+        # (there should always be data)
+        if not q:
+            raise Exception('could not find square in table')
+        
+        owner_name = q[0]
+        return owner_name
+    
+    def has_owner(self):
+        """Return true if a player owns this square."""
+        
+        return owner_name is not None
+    
+    def set_owner(self, owner_name):
+        """Set the owner of the square."""
+        
+        req.sql.execute('update grid set owner=? where row=? and col=?',
+                        (owner_name, self.row, self.col))
+    
+    def has_entity(self):
+        """Return true if there is an entity at this square."""
+        
+        return self.get_entity() is not None
     
     def get_entity(self):
         """Return the entity located at this grid square, or None."""
@@ -202,13 +258,28 @@ class Square:
                         (self.row, self.col))
         q = req.sql.fetchone()
         
-        if q:
-            entity_id = q[0]
+        # fail loudly if there isn't data 
+        # (there should always be data)
+        if not q:
+            raise Exception('could not find square in table')
+        
+        entity_id = q[0]
             
-            # if there exists an id in the table,
-            # return its corresponding entity
-            if entity_id:
-                return Entity(q[0])
+        # if there exists an id in the table,
+        # return its corresponding entity
+        if entity_id is not None:
+            return Entity(q[0])
+    
+    def set_entity(self, entity):
+        """Set the entity's location to this square.
+        
+        If the entity was previously located at another square, it
+        will be moved to this one.
+        
+        """
+        
+        # just use the Entity object's move method
+        entity.set_square(self)
         
     def get_data_type(self):
         """Return an integer representing the data type of the square."""

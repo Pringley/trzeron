@@ -33,24 +33,16 @@ import req, objects
 user = objects.User.client()
 req.out['sid'] = user.id
 
-if not user.is_logged_in():
-    
-    # if the user is trying to log in
-    if (req.field.has_key('username') and req.field.has_key('password')
-        and user.login(req.field['username'].value,
-                       req.field['password'].value)):
-            req.out['auth'] = True
-    
-    else:
-        # if login is unsuccessful, stop here!
-        req.out['auth'] = False
-        req.done()
-        exit(0)
+auth = user.is_logged_in()
+
+# try to log in users who are not authenticated
+if not auth:
+    if req.field.has_key('username') and req.field.has_key('password'):
+        username = req.field['username'].value
+        password = req.field['password'].value
         
+        auth = user.login(username, password)
     
-else:
-    
-    # if the user is logged in, play the game!
-    req.out['auth'] = True
-    
+req.out['auth'] = auth
+
 req.done()
