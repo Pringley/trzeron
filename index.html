@@ -79,89 +79,75 @@ function MouseWheel(e)
 }
 function hookEvent(element, eventName, callback)
 {
-  if(typeof(element) == "string")
-    element = document.getElementById(element);
-  if(element == null)
-    return;
-  if(element.addEventListener)
-  {
-    if(eventName == 'mousewheel')
-      element.addEventListener('DOMMouseScroll', callback, false);  
-    element.addEventListener(eventName, callback, false);
-  }
-  else if(element.attachEvent)
-    element.attachEvent("on" + eventName, callback);
+  	if(typeof(element) == "string")
+    		element = document.getElementById(element);
+  	if(element == null)
+    		return;
+  	if(element.addEventListener)
+  	{
+    		if(eventName == 'mousewheel')
+      	element.addEventListener('DOMMouseScroll', callback, 			false);  
+    		element.addEventListener(eventName, callback, false);
+  	}
+  	else if(element.attachEvent)
+    		element.attachEvent("on" + eventName, callback);
 }
 
 function unhookEvent(element, eventName, callback)
 {
-  if(typeof(element) == "string")
-    element = document.getElementById(element);
-  if(element == null)
-    return;
-  if(element.removeEventListener)
-  {
-    if(eventName == 'mousewheel')
-      element.removeEventListener('DOMMouseScroll', callback, false);  
-    element.removeEventListener(eventName, callback, false);
-  }
-  else if(element.detachEvent)
-    element.detachEvent("on" + eventName, callback);
+	if(typeof(element) == "string")
+		element = document.getElementById(element);	
+	if(element == null)
+		return;
+  	if(element.removeEventListener)
+  	{
+   		if(eventName == 'mousewheel')
+      	element.removeEventListener('DOMMouseScroll', 				callback, false);  
+    		element.removeEventListener(eventName, callback, 				false);
+  	}
+  	else if(element.detachEvent)
+    		element.detachEvent("on" + eventName, callback);
 }
 
 function cancelEvent(e)
 {
-  e = e ? e : window.event;
-  if(e.stopPropagation)
-    e.stopPropagation();
-  if(e.preventDefault)
-    e.preventDefault();
-  e.cancelBubble = true;
-  e.cancel = true;
-  e.returnValue = false;
-  return false;
+  	e = e ? e : window.event;
+  	if(e.stopPropagation)
+    		e.stopPropagation();
+  	if(e.preventDefault)
+    		e.preventDefault();
+  	e.cancelBubble = true;
+  	e.cancel = true;
+  	e.returnValue = false;
+  	return false;
 }
 
 $(document).ready(function() 
 {
-
-
-	
-	
 	//set it true on mousedown
 	$("#can").mousedown(function()
 	{
-		FillGrid();
-		DrawGrid();
-		TileSize--;
 	});
 
 	//reset it on mouseup
 	$("#can").mouseup(function(){draw=false;});
 
 	$("#can").mousemove(function(e)
-	{
-		if(draw==true)
-		{
-			ctx.lineWidth = 15;
-			ctx.lineCap = "round";
-			ctx.beginPath();
-			ctx.moveTo(e.pageX,e.pageY-60);
-			ctx.lineTo(e.pageX+1,e.pageY-59);
-			ctx.stroke();
-		}    
+	{ 
 	});
+	
 
-
+		
 
 	/* Initialization code. */
-	var draw=false;
-	
 	TileSize = 100;
 	canvas = document.getElementById("can");
 	ctx = canvas.getContext("2d");
 	hookEvent("can", 'mousewheel', MouseWheel);
-        
+
+	FillGrid();
+	DrawGrid();
+	
 });
 
 </script>
