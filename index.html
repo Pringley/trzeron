@@ -22,6 +22,7 @@ var Grid = new Array();
 
 var img_formatted = new Image();
 img_formatted.src = 'images/grid/data_formatted.png';
+img_formatted.onload = DrawAll;
 
 function GetImageForType(Type)
 {
@@ -62,6 +63,12 @@ function DrawGrid()
 			ctx.drawImage(Grid[i][j].Image,j + j * TileSize,i 			+ i * TileSize,TileSize,TileSize);
 		}
 	}
+}
+
+function DrawAll()
+{
+	FillGrid();
+	DrawGrid();
 }
 
 function MouseWheel(e)
