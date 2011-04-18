@@ -36,9 +36,9 @@ req.out['sid'] = user.id
 if not user.is_logged_in():
     
     # if the user is trying to log in
-    if req.field.has_key('username') and req.field.has_key('password'):
-        
-        if user.login(req.field['username'].value, req.field['password'].value):
+    if (req.field.has_key('username') and req.field.has_key('password')
+        and user.login(req.field['username'].value,
+                       req.field['password'].value)):
             req.out['auth'] = True
     
     else:

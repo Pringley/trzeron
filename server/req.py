@@ -38,7 +38,7 @@ out -- a dictionary to be returned in JSON
 import sys, os, cgi, json, sqlite3, Cookie
 
 # print header
-print 'Content-Type: text/plain'
+print 'Content-Type: application/json'
 print
 
 # uncomment to enable error output in browser
