@@ -10,76 +10,144 @@
 
 <body>
 <script>
+
+
+
 var canvas;
 var ctx;
+
+//Current size of each tile default is 100
+var TileSize;
+var Grid = new Array();
+
 var img_formatted = new Image();
 img_formatted.src = 'images/grid/data_formatted.png';
 
-function drawGrid()
+function GetImageForType(Type)
 {
-	ctx.drawImage(img_formatted,0,0);
+	if(Type == 'Formatted')
+	{
+		return img_formatted;
+	}
 }
-	
 
-$(document).ready(function() {
-	var draw=false;
-	
-	
-	canvas = document.getElementById("can");
-	ctx = canvas.getContext("2d");
-	ctx.strokeStyle = 'red';
-	
+function GridItem(Type)
+{
+	this.Type = Type;
+	this.Image = GetImageForType(Type);
+}
+
+function FillGrid()
+{
+	//TODO: use actual stuff
+	for(i=0;i * TileSize<720;i++)
+	{
+		Grid[i]=new Array();
+		for(j=0;j * TileSize<1280;j++)
+		{
+			Grid[i][j] = new GridItem('Formatted');
+		}
+	}
+}
+			
+
+function DrawGrid()
+{
+	ctx.fillStyle = "black";
+	ctx.fillRect(0,0,1280,720);
+	for(i=0;i * TileSize<720;i++)
+	{
+		for(j=0;j * TileSize<1280;j++)
+		{
+			ctx.drawImage(Grid[i][j].Image,j + j * TileSize,i 			+ i * TileSize,TileSize,TileSize);
+		}
+	}
+}
+
+function MouseWheel(e)
+{
+	e = e ? e : window.event;
+	var wheelData = e.detail ? e.detail * -1 : e.wheelDelta / 	40;
+  	TileSize += wheelData ;
+	if(TileSize < 5)
+	{
+		TileSize = 5;
+	}
+	FillGrid();
+	DrawGrid();
+	return cancelEvent();
+}
+function hookEvent(element, eventName, callback)
+{
+  	if(typeof(element) == "string")
+    		element = document.getElementById(element);
+  	if(element == null)
+    		return;
+  	if(element.addEventListener)
+  	{
+    		if(eventName == 'mousewheel')
+      	element.addEventListener('DOMMouseScroll', callback, 			false);  
+    		element.addEventListener(eventName, callback, false);
+  	}
+  	else if(element.attachEvent)
+    		element.attachEvent("on" + eventName, callback);
+}
+
+function unhookEvent(element, eventName, callback)
+{
+	if(typeof(element) == "string")
+		element = document.getElementById(element);	
+	if(element == null)
+		return;
+  	if(element.removeEventListener)
+  	{
+   		if(eventName == 'mousewheel')
+      	element.removeEventListener('DOMMouseScroll', 				callback, false);  
+    		element.removeEventListener(eventName, callback, 				false);
+  	}
+  	else if(element.detachEvent)
+    		element.detachEvent("on" + eventName, callback);
+}
+
+function cancelEvent(e)
+{
+  	e = e ? e : window.event;
+  	if(e.stopPropagation)
+    		e.stopPropagation();
+  	if(e.preventDefault)
+    		e.preventDefault();
+  	e.cancelBubble = true;
+  	e.cancel = true;
+  	e.returnValue = false;
+  	return false;
+}
+
+$(document).ready(function() 
+{
 	//set it true on mousedown
 	$("#can").mousedown(function()
 	{
-		draw=true;
-		drawGrid();
 	});
 
 	//reset it on mouseup
 	$("#can").mouseup(function(){draw=false;});
 
 	$("#can").mousemove(function(e)
-	{
-		if(draw==true)
-		{
-			ctx.lineWidth = 15;
-			ctx.lineCap = "round";
-			ctx.beginPath();
-			ctx.moveTo(e.pageX,e.pageY-60);
-			ctx.lineTo(e.pageX+1,e.pageY-59);
-			ctx.stroke();
-		}    
+	{ 
 	});
+	
 
-        
-       //code for color pallete
-        $("#clr > div").click(
-        function(){
-               ctx.strokeStyle = $(this).css("background-color");
-        });
-     
-        //Eraser
-        $("#eraser").click(function(){
-        ctx.strokeStyle = '#fff';
-        });
+		
 
-        //Code for save the image
-        $("#save").click(function(){ 
-            $("#result").append("<br /><br /><img src="+
-            canvas.toDataURL()+ 
-           " /><br /><a href="+canvas.toDataURL()+ 
-           " target='_blank'>show</a>");
-        });
-     
-        //Clear 
-        $("#clear").click(function(){
-                 ctx.fillStyle = "#fff";
-                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                 ctx.strokeStyle = "red";
-                 ctx.fillStyle = "red";
-            }
-            );
+	/* Initialization code. */
+	TileSize = 100;
+	canvas = document.getElementById("can");
+	ctx = canvas.getContext("2d");
+	hookEvent("can", 'mousewheel', MouseWheel);
+
+	FillGrid();
+	DrawGrid();
+	
 });
 
 </script>
