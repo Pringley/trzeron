@@ -41,9 +41,6 @@ import sys, os, cgi, json, sqlite3, Cookie
 print 'Content-Type: application/json'
 print
 
-# uncomment to enable error output in browser
-sys.stderr = sys.stdout
-
 # set up CGI (input data)
 field = cgi.FieldStorage()
 ip = os.getenv('HTTP_CLIENT_IP') or os.getenv('HTTP_X_FORWARDED_FOR') or os.getenv('REMOTE_ADDR') or 'UNKNOWN'
@@ -58,6 +55,12 @@ def sanitize(input_string):
 
 # set up JSON (output data)
 out = {}
+def error(message):
+    """Append a message to the error log sent to the client."""
+    if not out.has_key('errors'):
+        out['errors'] = [message]
+    else:
+        out['errors'] += [message]
 
 def done():
     """Close the connection to SQLite and print the JSON document."""
@@ -67,6 +70,8 @@ def done():
     sql.close()
 
     # print JSON
+    print 'Content-Type: application/json'
+    print
     print json.dumps(out, separators=(',',':'))
 
 if __name__ == '__main__':
