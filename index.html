@@ -19,16 +19,30 @@ var ctx;
 //Current size of each tile default is 100
 var TileSize;
 var Grid = new Array();
+var Corner_X;
+var Corner_Y;
+var CurMouse_X;
+var CurMouse_Y;
+var Dragging;
+
 
 var img_formatted = new Image();
 img_formatted.src = 'images/grid/data_formatted.png';
 img_formatted.onload = DrawAll;
+
+var img_raw = new Image();
+img_raw.src = 'images/grid/data_raw.png';
+img_raw.onload = DrawAll;
 
 function GetImageForType(Type)
 {
 	if(Type == 'Formatted')
 	{
 		return img_formatted;
+	}
+	if(Type == 'Raw')
+	{
+		return img_raw;
 	}
 }
 
@@ -38,15 +52,57 @@ function GridItem(Type)
 	this.Image = GetImageForType(Type);
 }
 
+function Zoom(Amount)
+{
+	Amount *= 60;
+	var NumX = IntegerDivide(1280,TileSize);
+	Amount = IntegerDivide(Amount,NumX);
+	TileSize += Amount;
+
+	if(TileSize < 10)
+	{
+		Amount += 10 - TileSize;
+		TileSize = 10;
+	}
+		
+	if(TileSize > 600)
+	{
+		Amount += 600 - TileSize;
+		TileSize = 600;
+	}
+
+	var DistX = CurMouse_X + Corner_X;
+	DistX = IntegerDivide(DistX,TileSize);
+	Corner_X += DistX * Amount;
+
+	var DistY = CurMouse_Y + Corner_Y;
+	DistY = IntegerDivide(DistY,TileSize);
+	Corner_Y += DistY * Amount;
+}
+
+function Pan(AmountX,AmountY)
+{
+	Corner_X += AmountX;
+	Corner_Y += AmountY;
+	DrawAll();
+}
+
 function FillGrid()
 {
+	var NumX = (1280/TileSize) + 2;
+	var NumY = (720 / TileSize) + 2;
+	var FirstX = IntegerDivide(Corner_X,TileSize) - 1;
+	var FirstY = IntegerDivide(Corner_Y,TileSize) - 1;
 	//TODO: use actual stuff
-	for(i=0;i * TileSize<720;i++)
+	for(i=0;i<NumY;i++)
 	{
 		Grid[i]=new Array();
-		for(j=0;j * TileSize<1280;j++)
+		for(j=0;j<NumX;j++)
 		{
-			Grid[i][j] = new GridItem('Formatted');
+			if((FirstX + j)<0 ^ (FirstY + i)< 0)
+				Grid[i][j] = new GridItem('Raw');
+			else
+				Grid[i][j] = new GridItem('Formatted');
 		}
 	}
 }
@@ -56,11 +112,19 @@ function DrawGrid()
 {
 	ctx.fillStyle = "black";
 	ctx.fillRect(0,0,1280,720);
-	for(i=0;i * TileSize<720;i++)
+
+	var NumX = (1280/TileSize) + 2;
+	var NumY = (720 / TileSize) + 2;
+
+	var OffsetX = -1 * (TileSize + Corner_X % TileSize);
+	var OffsetY = -1 * (TileSize + Corner_Y % TileSize);
+
+	for(i=0;i<NumY;i++)
 	{
-		for(j=0;j * TileSize<1280;j++)
+		for(j=0;j<NumX;j++)
 		{
-			ctx.drawImage(Grid[i][j].Image,j + j * TileSize,i 			+ i * TileSize,TileSize,TileSize);
+
+			ctx.drawImage(Grid[i][j].Image,OffsetX + j + j * 				TileSize,OffsetY + i + i * 								TileSize,TileSize,TileSize);
 		}
 	}
 }
@@ -74,14 +138,10 @@ function DrawAll()
 function MouseWheel(e)
 {
 	e = e ? e : window.event;
-	var wheelData = e.detail ? e.detail * -1 : e.wheelDelta / 	40;
-  	TileSize += wheelData ;
-	if(TileSize < 5)
-	{
-		TileSize = 5;
-	}
-	FillGrid();
-	DrawGrid();
+	var wheelData = e.detail ? e.detail * -1 : e.wheelDelta;
+
+	Zoom(wheelData);
+	DrawAll();
 	return cancelEvent();
 }
 function hookEvent(element, eventName, callback)
@@ -129,18 +189,52 @@ function cancelEvent(e)
   	return false;
 }
 
+function IntegerDivide(Num,Den)
+{
+	Num -= Num%Den;
+	return Num/Den;
+}
+
 $(document).ready(function() 
 {
 	//set it true on mousedown
 	$("#can").mousedown(function()
 	{
+		Dragging = true;
 	});
 
 	//reset it on mouseup
-	$("#can").mouseup(function(){draw=false;});
+	$("#can").mouseup(function()
+	{
+		Dragging=false;
+	});
 
 	$("#can").mousemove(function(e)
 	{ 
+		var x = this.offsetLeft;
+		var y = this.offsetTop;
+		var element = this.offsetParent;
+
+		while (element !== null) 
+		{
+			x = parseInt (x) + parseInt (element.offsetLeft);
+			y = parseInt (y) + parseInt (element.offsetTop);
+			element = element.offsetParent;
+		}
+		
+		
+
+		
+		var CurX = event.clientX - x;
+		var CurY = event.clientY - y;
+
+		if(Dragging)
+		{
+			Pan(CurMouse_X - CurX, CurMouse_Y - CurY);
+		}
+
+		CurMouse_X = CurX;
+		CurMouse_Y = CurY;
 	});
 	
 
@@ -148,6 +242,9 @@ $(document).ready(function()
 
 	/* Initialization code. */
 	TileSize = 100;
+	Corner_X = 0;
+	Corner_Y = 0;
+	Dragging = false;
 	canvas = document.getElementById("can");
 	ctx = canvas.getContext("2d");
 	hookEvent("can", 'mousewheel', MouseWheel);
