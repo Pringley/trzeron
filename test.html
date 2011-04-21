@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>img{ height: 100px; float: left; }</style>
+  <script src="jquery.js"></script>
+  <script src="client.js"></script>
+  <script>
+    function login_form() {
+       var username = $('#username').val();
+       var password = $('#password').val();
+       login(username, password, function(valid) {
+           if(valid) { $('#status').html('Logged in.'); }
+       });
+    }
+  </script>
+</head>
+<body>
+<h3 id="status"> Not logged in. </h3>
+<form action="">
+Username: <input id="username" /> <br/>
+Password: <input type="password" id="password" /> <br/>
+<input type="button" onclick="login_form()" value="go"/>
+</form>
+</body>
+</html>
